@@ -1,0 +1,56 @@
+#include <stdio.h>
+#include <string.h>
+
+#define NUM_ROUNDS 16
+#define KEY_SIZE 56
+#define SUBKEY_SIZE 48
+
+// Left shift schedule
+int shift_schedule[NUM_ROUNDS] = {
+    1, 1, 2, 2, 2, 2, 2, 2,
+    1, 2, 2, 2, 2, 2, 2, 1
+};
+
+// Placeholder PC-2 positions: pick 24 bits from each half (C and D)
+int pc2_c[24] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
+int pc2_d[24] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
+
+void left_shift(char *key, int shifts) {
+    char temp[3];
+    strncpy(temp, key, shifts);
+    memmove(key, key + shifts, 28 - shifts);
+    strncpy(key + 28 - shifts, temp, shifts);
+}
+
+void generate_subkeys(const char *key56, char subkeys[NUM_ROUNDS][SUBKEY_SIZE + 1]) {
+    char C[29], D[29];
+    strncpy(C, key56, 28); C[28] = '\0';
+    strncpy(D, key56 + 28, 28); D[28] = '\0';
+
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        left_shift(C, shift_schedule[i]);
+        left_shift(D, shift_schedule[i]);
+
+        char subkey[SUBKEY_SIZE + 1];
+        for (int j = 0; j < 24; j++) {
+            subkey[j] = C[pc2_c[j]];
+            subkey[j + 24] = D[pc2_d[j]];
+        }
+        subkey[48] = '\0';
+        strcpy(subkeys[i], subkey);
+    }
+}
+
+int main() {
+    const char key56[] = "0001001100110100010101110111100110011011101111001101111111110001"; // Example 64-bit key reduced by PC-1
+    char subkeys[NUM_ROUNDS][SUBKEY_SIZE + 1];
+
+    generate_subkeys(key56, subkeys);
+
+    printf("DES Subkeys (48-bit) from disjoint 28-bit halves:\n");
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        printf("Round %2d: %s\n", i + 1, subkeys[i]);
+    }
+
+    return 0;
+}

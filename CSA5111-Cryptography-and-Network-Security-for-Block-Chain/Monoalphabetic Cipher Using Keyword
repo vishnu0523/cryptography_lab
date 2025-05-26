@@ -1,0 +1,64 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_LEN 26
+
+// Function to create cipher alphabet using a keyword
+void createCipherAlphabet(const char *keyword, char *cipherAlphabet) {
+    int used[26] = {0};
+    int index = 0;
+
+    // Add keyword letters first
+    for (int i = 0; keyword[i] != '\0'; i++) {
+        char ch = toupper(keyword[i]);
+        if (isalpha(ch) && !used[ch - 'A']) {
+            cipherAlphabet[index++] = ch;
+            used[ch - 'A'] = 1;
+        }
+    }
+
+    // Add remaining letters
+    for (char ch = 'A'; ch <= 'Z'; ch++) {
+        if (!used[ch - 'A']) {
+            cipherAlphabet[index++] = ch;
+        }
+    }
+    cipherAlphabet[index] = '\0'; // null-terminate
+}
+
+// Encrypt the plaintext using the cipher alphabet
+void encryptMonoalphabetic(const char *plaintext, const char *cipherAlphabet, char *ciphertext) {
+    for (int i = 0; plaintext[i] != '\0'; i++) {
+        char ch = plaintext[i];
+        if (isalpha(ch)) {
+            int pos = tolower(ch) - 'a';
+            ciphertext[i] = isupper(ch) ? cipherAlphabet[pos] : tolower(cipherAlphabet[pos]);
+        } else {
+            ciphertext[i] = ch;
+        }
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+}
+
+int main() {
+    char keyword[] = "CIPHER";
+    char cipherAlphabet[ALPHABET_LEN + 1];
+    char plaintext[256], ciphertext[256];
+
+    createCipherAlphabet(keyword, cipherAlphabet);
+
+    printf("Monoalphabetic Cipher based on keyword '%s'\n", keyword);
+    printf("Plain  : abcdefghijklmnopqrstuvwxyz\n");
+    printf("Cipher : %s\n\n", cipherAlphabet);
+
+    printf("Enter plaintext: ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0';  // remove newline
+
+    encryptMonoalphabetic(plaintext, cipherAlphabet, ciphertext);
+
+    printf("Encrypted: %s\n", ciphertext);
+
+    return 0;
+}

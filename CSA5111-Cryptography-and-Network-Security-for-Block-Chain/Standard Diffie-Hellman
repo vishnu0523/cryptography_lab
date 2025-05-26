@@ -1,0 +1,39 @@
+#include <stdio.h>
+#include <math.h>
+
+// Modular exponentiation: (base^exp) % mod
+long long modPow(long long base, long long exp, long long mod) {
+    long long result = 1;
+    base %= mod;
+    while (exp > 0) {
+        if (exp % 2) result = (result * base) % mod;
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+    return result;
+}
+
+int main() {
+    // Public parameters
+    long long q = 23;  // A prime number
+    long long a = 5;   // Primitive root modulo q
+
+    // Alice and Bob choose private keys
+    long long xa = 6;  // Alice's secret
+    long long xb = 15; // Bob's secret
+
+    // Compute public keys
+    long long ya = modPow(a, xa, q); // a^xa mod q
+    long long yb = modPow(a, xb, q); // a^xb mod q
+
+    // Exchange public keys and compute shared secret
+    long long ka = modPow(yb, xa, q); // (a^xb)^xa mod q
+    long long kb = modPow(ya, xb, q); // (a^xa)^xb mod q
+
+    printf("Alice sends: %lld\n", ya);
+    printf("Bob sends: %lld\n", yb);
+    printf("Alice computes shared key: %lld\n", ka);
+    printf("Bob computes shared key: %lld\n", kb);
+
+    return 0;
+}

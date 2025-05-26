@@ -1,0 +1,76 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+// Function to check if 'a' is valid (gcd(a, 26) == 1)
+int is_valid_a(int a) {
+    int temp;
+    while (a != 0) {
+        temp = a;
+        a = 26 % a;
+    }
+    return (temp == 1);
+}
+
+// Function to encrypt a character using Affine Cipher
+char encrypt(int a, int b, char p) {
+    if (isalpha(p)) {
+        char base = islower(p) ? 'a' : 'A';
+        return ((a * (p - base) + b) % 26) + base;
+    }
+    return p; // Non-alphabetic characters remain unchanged
+}
+
+// Function to decrypt a character using Affine Cipher
+char decrypt(int a, int b, char c) {
+    if (isalpha(c)) {
+        // Find modular inverse of 'a' (a^-1 mod 26)
+        int a_inv = 0;
+        for (int i = 0; i < 26; i++) {
+            if ((a * i) % 26 == 1) {
+                a_inv = i;
+                break;
+            }
+        }
+
+        char base = islower(c) ? 'a' : 'A';
+        return (a_inv * (26 + (c - base) - b) % 26) + base;
+    }
+    return c; // Non-alphabetic characters remain unchanged
+}
+
+int main() {
+    int a, b;
+    char plaintext[100], ciphertext[100], decrypted[100];
+
+    printf("Enter values of a and b (for C = (a*p + b) mod 26): ");
+    scanf("%d %d", &a, &b);
+
+    // Check if 'a' is valid
+    if (!is_valid_a(a)) {
+        printf("Error: a=%d is invalid. gcd(a, 26) must be 1.\n", a);
+        printf("For example, a=1,3,5,7,9,11,15,17,19,21,23,25 are valid.\n");
+        return 1;
+    }
+
+    printf("Enter plaintext: ");
+    scanf(" %[^\n]s", plaintext);
+
+    // Encrypt the plaintext
+    for (int i = 0; i < strlen(plaintext); i++) {
+        ciphertext[i] = encrypt(a, b, plaintext[i]);
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+
+    printf("Ciphertext: %s\n", ciphertext);
+
+    // Decrypt the ciphertext
+    for (int i = 0; i < strlen(ciphertext); i++) {
+        decrypted[i] = decrypt(a, b, ciphertext[i]);
+    }
+    decrypted[strlen(ciphertext)] = '\0';
+
+    printf("Decrypted: %s\n", decrypted);
+
+    return 0;
+}

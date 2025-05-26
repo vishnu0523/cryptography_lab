@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <string.h>
+#include <openssl/des.h>
+
+void des_encrypt_block(DES_cblock *input, DES_cblock *output, DES_key_schedule *schedule) {
+    DES_ecb_encrypt(input, output, schedule, DES_ENCRYPT);
+}
+
+void des_cbc_encrypt(unsigned char *in, unsigned char *out, int len, DES_key_schedule *ks, DES_cblock *iv) {
+    DES_ncbc_encrypt(in, out, len, ks, iv, DES_ENCRYPT);
+}
+
+int main() {
+    DES_cblock key = {0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
+    DES_key_schedule schedule;
+    DES_set_key_unchecked(&key, &schedule);
+
+    unsigned char plaintext[16] = "BLOCKONEBLOCKTWO";  // 2 blocks of 8 bytes
+    unsigned char ecb[16], cbc[16];
+
+    // Encrypt with ECB
+    des_encrypt_block((DES_cblock*)&plaintext[0], (DES_cblock*)&ecb[0], &schedule);
+    des_encrypt_block((DES_cblock*)&plaintext[8], (DES_cblock*)&ecb[8], &schedule);
+
+    // Encrypt with CBC
+    DES_cblock iv = {0};
+    des_cbc_encrypt(plaintext, cbc, 16, &schedule, &iv);
+
+    // Introduce error in first ciphertext block (flip a bit)
+    ecb[0] ^= 0x01;
+    cbc[0] ^= 0x01;
+
+    printf("Decryption Error Propagation\n");
+    printf("ECB: Only P1 affected\n");
+    printf("CBC: P1 and P2 affected\n");
+
+    return 0;
+}

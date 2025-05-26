@@ -1,0 +1,37 @@
+import zlib
+
+# Simple XOR encryption/decryption (not secure, for demonstration only)
+def xor_encrypt_decrypt(data, key=123):
+    return bytes([b ^ key for b in data])
+
+# Main program
+def main():
+    # Step 0: Original data (input)
+    input_text = "This is a test message for compression and encryption."
+    print("📥 Original text:", input_text)
+
+    # Step 1: Convert to bytes and compress using zlib
+    input_data = input_text.encode()
+    compressed_data = zlib.compress(input_data)
+    print("✅ Compressed data length:", len(compressed_data))
+
+    # Step 2: Encrypt using XOR method
+    encrypted_data = xor_encrypt_decrypt(compressed_data)
+    print("🔒 Encrypted data length:", len(encrypted_data))
+
+    # Step 3: Decrypt the data
+    decrypted_compressed_data = xor_encrypt_decrypt(encrypted_data)
+
+    # Step 4: Decompress to get the original data back
+    output_data = zlib.decompress(decrypted_compressed_data)
+    output_text = output_data.decode()
+    print("🔓 Decrypted text:", output_text)
+
+    # Final check
+    if input_text == output_text:
+        print("\n🎉 Success! Original and decrypted texts match.")
+    else:
+        print("\n❌ Mismatch detected in original and decrypted data.")
+
+# Run the main function
+main()

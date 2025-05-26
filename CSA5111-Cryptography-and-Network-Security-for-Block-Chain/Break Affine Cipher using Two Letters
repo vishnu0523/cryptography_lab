@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int modInverse(int a, int m) {
+    a %= m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1)
+            return x;
+    }
+    return -1;
+}
+
+void decrypt(char *cipher, char *plain, int a, int b) {
+    int a_inv = modInverse(a, 26);
+    if (a_inv == -1) {
+        printf("No modular inverse for a = %d\n", a);
+        return;
+    }
+
+    for (int i = 0; cipher[i] != '\0'; i++) {
+        char ch = toupper(cipher[i]);
+        if (isalpha(ch)) {
+            int c = ch - 'A';
+            int p = (a_inv * (c - b + 26)) % 26;
+            plain[i] = p + 'A';
+        } else {
+            plain[i] = ch;
+        }
+    }
+    plain[strlen(cipher)] = '\0';
+}
+
+int main() {
+    // Example ciphertext
+    char ciphertext[] = "BUUBB ZBUB QBBU";  // Replace with actual ciphertext
+    char plaintext[100];
+
+    int a = 3, b = 15;
+
+    decrypt(ciphertext, plaintext, a, b);
+    printf("Decrypted text: %s\n", plaintext);
+
+    return 0;
+}

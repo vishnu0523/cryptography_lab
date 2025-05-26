@@ -1,0 +1,41 @@
+#include <stdio.h>
+#include <math.h>
+
+long long modPow(long long base, long long exp, long long mod) {
+    long long result = 1;
+    base %= mod;
+    while (exp > 0) {
+        if (exp % 2 == 1)
+            result = (result * base) % mod;
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+    return result;
+}
+
+int main() {
+    // RSA public key
+    long long e = 17;
+    long long n = 3233; // Assume this is "large" for the demo
+
+    // Step 1: Precompute RSA encryptions of A-Z (0 to 25)
+    printf("Precomputed Cipher Dictionary:\n");
+    for (int m = 0; m < 26; m++) {
+        long long c = modPow(m, e, n);
+        printf("Plain: %c -> Encrypted: %lld\n", 'A' + m, c);
+    }
+
+    // Example: Attacker intercepts encrypted letter 2187
+    long long intercepted = 2187;
+    printf("\nIntercepted Cipher: %lld\n", intercepted);
+
+    // Step 2: Try all mappings to find plaintext
+    for (int m = 0; m < 26; m++) {
+        if (modPow(m, e, n) == intercepted) {
+            printf("Decrypted Letter: %c (Plaintext = %d)\n", 'A' + m, m);
+            break;
+        }
+    }
+
+    return 0;
+}

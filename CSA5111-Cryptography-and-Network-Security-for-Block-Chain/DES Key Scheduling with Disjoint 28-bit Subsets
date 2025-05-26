@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <string.h>
+
+int shift_schedule[16] = {
+    1, 1, 2, 2,
+    2, 2, 2, 2,
+    1, 2, 2, 2,
+    2, 2, 2, 1
+};
+
+// Dummy PC-1 mapping (just removes parity bits)
+void apply_pc1(const char *key64, char *key56) {
+    int j = 0;
+    for (int i = 0; i < 64; i++) {
+        if ((i + 1) % 8 != 0) {
+            key56[j++] = key64[i];
+        }
+    }
+}
+
+// Left shift 28-bit half
+void left_shift(char *half, int shifts) {
+    for (int s = 0; s < shifts; s++) {
+        char temp = half[0];
+        for (int i = 0; i < 27; i++) {
+            half[i] = half[i + 1];
+        }
+        half[27] = temp;
+    }
+}
+
+// Generate 48-bit subkeys with 24 bits from each half
+void generate_subkeys(const char *key64, char subkeys[16][48]) {
+    char key56[56];
+    apply_pc1(key64, key56);
+
+    char C[28], D[28];
+    memcpy(C, key56, 28);
+    memcpy(D, key56 + 28, 28);
+
+    for (int round = 0; round < 16; round++) {
+        left_shift(C, shift_schedule[round]);
+        left_shift(D, shift_schedule[round]);
+
+        // Select first 24 bits from C and D each
+        for (int i = 0; i < 24; i++) {
+            subkeys[round][i] = C[i];
+            subkeys[round][i + 24] = D[i];
+        }
+    }
+}
+
+void print_subkey(const char subkey[48]) {
+    for (int i = 0; i < 48; i++) {
+        printf("%c", subkey[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    // Example 64-bit key in binary (char '0' or '1')
+    char key64[64] = "0001001100110100010101110111100110011011101111001101111111110001";
+    char subkeys[16][48];
+
+    generate_subkeys(key64, subkeys);
+
+    printf("DES Subkeys with disjoint 28-bit halves (24 bits each):\n");
+    for (int i = 0; i < 16; i++) {
+        printf("K%-2d: ", i + 1);
+        print_subkey(subkeys[i]);
+    }
+
+    return 0;
+}

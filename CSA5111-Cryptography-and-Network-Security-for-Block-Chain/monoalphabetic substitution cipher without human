@@ -1,0 +1,94 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+
+#define ALPHABET_LEN 26
+#define MAX_TEXT_LEN 1024
+#define MAX_TOP_N 20
+
+// English letter frequency order (most to least common)
+const char english_freq_order[ALPHABET_LEN + 1] = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+// Structure for letter and its frequency
+typedef struct {
+    char letter;
+    int count;
+} LetterFreq;
+
+// Compare function for qsort (descending by count)
+int cmp_freq(const void *a, const void *b) {
+    LetterFreq *fa = (LetterFreq *)a;
+    LetterFreq *fb = (LetterFreq *)b;
+    return fb->count - fa->count;
+}
+
+// Frequency attack function
+void frequency_attack(const char *cipher, int top_n) {
+    int len = strlen(cipher);
+    int freq[ALPHABET_LEN] = {0};
+    LetterFreq freq_arr[ALPHABET_LEN];
+    char plaintexts[MAX_TOP_N][MAX_TEXT_LEN];
+
+    // Count letter frequencies (ignore case, non-alpha)
+    for (int i = 0; i < len; i++) {
+        if (isalpha(cipher[i])) {
+            freq[toupper(cipher[i]) - 'A']++;
+        }
+    }
+    // Build LetterFreq array
+    for (int i = 0; i < ALPHABET_LEN; i++) {
+        freq_arr[i].letter = 'A' + i;
+        freq_arr[i].count = freq[i];
+    }
+    // Sort by frequency
+    qsort(freq_arr, ALPHABET_LEN, sizeof(LetterFreq), cmp_freq);
+
+    // Try top_n mappings
+    for (int k = 0; k < top_n; k++) {
+        char map[ALPHABET_LEN];
+        for (int i = 0; i < ALPHABET_LEN; i++) map[i] = 0;
+
+        // Map the k most frequent ciphertext letters to the k most common English letters
+        for (int i = 0; i < ALPHABET_LEN; i++) {
+            if (i + k < ALPHABET_LEN)
+                map[freq_arr[i].letter - 'A'] = english_freq_order[i + k];
+            else
+                map[freq_arr[i].letter - 'A'] = english_freq_order[(i + k) % ALPHABET_LEN];
+        }
+        // Generate plaintext
+        for (int i = 0; i < len; i++) {
+            if (isalpha(cipher[i])) {
+                char up = toupper(cipher[i]);
+                char pt = map[up - 'A'];
+                // Preserve case
+                plaintexts[k][i] = islower(cipher[i]) ? tolower(pt) : pt;
+            } else {
+                plaintexts[k][i] = cipher[i];
+            }
+        }
+        plaintexts[k][len] = '\0';
+    }
+    // Print results
+    printf("\nTop %d possible plaintexts (in rough order of likelihood):\n", top_n);
+    for (int k = 0; k < top_n; k++) {
+        printf("%2d: %s\n", k + 1, plaintexts[k]);
+    }
+}
+
+int main() {
+    char cipher[MAX_TEXT_LEN];
+    int top_n;
+
+    printf("Enter the ciphertext (A-Z only, spaces allowed):\n");
+    fgets(cipher, sizeof(cipher), stdin);
+    cipher[strcspn(cipher, "\n")] = '\0'; // Remove newline
+
+    printf("How many top plaintexts to display (max %d)? ", MAX_TOP_N);
+    scanf("%d", &top_n);
+    if (top_n < 1 || top_n > MAX_TOP_N) top_n = 5;
+
+    frequency_attack(cipher, top_n);
+
+    return 0;
+}

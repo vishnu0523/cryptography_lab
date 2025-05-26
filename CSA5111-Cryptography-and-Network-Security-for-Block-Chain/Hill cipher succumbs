@@ -1,0 +1,117 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MOD 26
+
+// Function to compute modular inverse of a number mod 26
+int modinv(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++)
+        if ((a * x) % m == 1)
+            return x;
+    return -1;
+}
+
+// Function to compute determinant of 2x2 matrix mod 26
+int det2(int m[2][2]) {
+    return (m[0][0]*m[1][1] - m[0][1]*m[1][0] + MOD*MOD) % MOD;
+}
+
+// Function to compute inverse of 2x2 matrix mod 26
+int inv2(int in[2][2], int out[2][2]) {
+    int d = det2(in);
+    int invd = modinv(d, MOD);
+    if (invd == -1) return 0;
+    out[0][0] = (in[1][1] * invd) % MOD;
+    out[0][1] = ((-in[0][1] + MOD) * invd) % MOD;
+    out[1][0] = ((-in[1][0] + MOD) * invd) % MOD;
+    out[1][1] = (in[0][0] * invd) % MOD;
+    return 1;
+}
+
+// Multiply 2x2 matrices mod 26: out = (a * b) % 26
+void matmul2(int a[2][2], int b[2][2], int out[2][2]) {
+    for (int i=0; i<2; i++)
+        for (int j=0; j<2; j++) {
+            out[i][j] = 0;
+            for (int k=0; k<2; k++)
+                out[i][j] += a[i][k]*b[k][j];
+            out[i][j] %= MOD;
+        }
+}
+
+// Multiply 2x2 matrix and 2x1 vector mod 26: out = (a * b) % 26
+void matvec2(int a[2][2], int b[2], int out[2]) {
+    for (int i=0; i<2; i++) {
+        out[i] = 0;
+        for (int j=0; j<2; j++)
+            out[i] += a[i][j]*b[j];
+        out[i] %= MOD;
+    }
+}
+
+// Convert string to vector (A=0,...,Z=25)
+void str2vec(const char *s, int v[2]) {
+    for (int i=0; i<2; i++)
+        v[i] = s[i] - 'A';
+}
+
+// Print 2x2 matrix
+void printmat2(int m[2][2]) {
+    for (int i=0; i<2; i++)
+        printf("%2d %2d\n", m[i][0], m[i][1]);
+}
+
+int main() {
+    char pt1[3], pt2[3], ct1[3], ct2[3];
+    int P[2][2], C[2][2], Pinv[2][2], K[2][2];
+
+    printf("Enter first plaintext pair (2 letters, e.g., HE): ");
+    scanf("%2s", pt1);
+    printf("Enter second plaintext pair (2 letters, e.g., LP): ");
+    scanf("%2s", pt2);
+    printf("Enter first ciphertext pair (2 letters, e.g., ZI): ");
+    scanf("%2s", ct1);
+    printf("Enter second ciphertext pair (2 letters, e.g., YQ): ");
+    scanf("%2s", ct2);
+
+    // Build plaintext and ciphertext matrices
+    str2vec(pt1, P[0]);
+    str2vec(pt2, P[1]);
+    str2vec(ct1, C[0]);
+    str2vec(ct2, C[1]);
+
+    // Transpose matrices for correct orientation
+    int PT[2][2] = {{P[0][0], P[1][0]}, {P[0][1], P[1][1]}};
+    int CT[2][2] = {{C[0][0], C[1][0]}, {C[0][1], C[1][1]}};
+
+    // Invert PT
+    if (!inv2(PT, Pinv)) {
+        printf("Plaintext matrix is not invertible mod 26. Try different pairs.\n");
+        return 1;
+    }
+
+    // Compute key matrix K = C * P^{-1} mod 26
+    matmul2(CT, Pinv, K);
+
+    printf("\nRecovered Key Matrix:\n");
+    printmat2(K);
+
+    // Test decryption: decrypt ct1, ct2
+    int keyinv[2][2];
+    if (!inv2(K, keyinv)) {
+        printf("Key matrix is not invertible mod 26.\n");
+        return 1;
+    }
+    int cvec[2], pvec[2];
+    printf("\nDecrypting ciphertext pairs:\n");
+    for (int i=0; i<2; i++) {
+        cvec[0] = C[i][0];
+        cvec[1] = C[i][1];
+        matvec2(keyinv, cvec, pvec);
+        printf("Ciphertext %c%c -> Plaintext %c%c\n",
+            cvec[0]+'A', cvec[1]+'A',
+            (pvec[0]+26)%26+'A', (pvec[1]+26)%26+'A');
+    }
+    return 0;
+}

@@ -1,0 +1,65 @@
+#include <stdio.h>
+#include <string.h>
+
+#define BLOCK_SIZE 8
+
+void xor_block(char *in, char *out, char *key) {
+    for (int i = 0; i < BLOCK_SIZE; i++)
+        out[i] = in[i] ^ key[i];
+}
+
+void pad(char *data, int *len) {
+    int pad_len = BLOCK_SIZE - (*len % BLOCK_SIZE);
+    for (int i = 0; i < pad_len; i++)
+        data[*len + i] = (i == 0) ? 0x80 : 0x00; // 1 followed by zeros
+    *len += pad_len;
+}
+
+void ecb_encrypt(char *data, char *key, int len) {
+    char block[BLOCK_SIZE];
+    printf("\nECB Encrypted:\n");
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        xor_block(&data[i], block, key);
+        for (int j = 0; j < BLOCK_SIZE; j++) printf("%02X ", block[j]);
+        printf("\n");
+    }
+}
+
+void cbc_encrypt(char *data, char *key, int len, char *iv) {
+    char block[BLOCK_SIZE], temp[BLOCK_SIZE];
+    memcpy(temp, iv, BLOCK_SIZE);
+    printf("\nCBC Encrypted:\n");
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        for (int j = 0; j < BLOCK_SIZE; j++) block[j] = data[i + j] ^ temp[j];
+        xor_block(block, temp, key);
+        for (int j = 0; j < BLOCK_SIZE; j++) printf("%02X ", temp[j]);
+        printf("\n");
+    }
+}
+
+void cfb_encrypt(char *data, char *key, int len, char *iv) {
+    char block[BLOCK_SIZE], temp[BLOCK_SIZE];
+    memcpy(temp, iv, BLOCK_SIZE);
+    printf("\nCFB Encrypted:\n");
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        xor_block(temp, block, key);  // keystream
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            temp[j] = data[i + j] ^ block[j];
+            printf("%02X ", temp[j]);
+        }
+        printf("\n");
+    }
+}
+
+int main() {
+    char plaintext[64] = "HelloWorld12345";
+    int len = strlen(plaintext);
+    char key[BLOCK_SIZE] = "MyKey123";
+    char iv[BLOCK_SIZE] = "InitVect";
+
+    pad(plaintext, &len);
+    ecb_encrypt(plaintext, key, len);
+    cbc_encrypt(plaintext, key, len, iv);
+    cfb_encrypt(plaintext, key, len, iv);
+    return 0;
+}

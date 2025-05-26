@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <math.h>
+
+int gcd(int a, int b) {
+    while (b != 0) {
+        int temp = a % b;
+        a = b;
+        b = temp;
+    }
+    return a;
+}
+
+int modInverse(int e, int phi) {
+    int t = 0, newt = 1;
+    int r = phi, newr = e;
+
+    while (newr != 0) {
+        int quotient = r / newr;
+        int temp;
+
+        temp = newt;
+        newt = t - quotient * newt;
+        t = temp;
+
+        temp = newr;
+        newr = r - quotient * newr;
+        r = temp;
+    }
+
+    if (r > 1) return -1;
+    if (t < 0) t += phi;
+
+    return t;
+}
+
+long long modPow(long long base, long long exp, long long mod) {
+    long long result = 1;
+    base %= mod;
+    while (exp > 0) {
+        if (exp % 2) result = (result * base) % mod;
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+    return result;
+}
+
+int main() {
+    // Bob's original primes
+    int p = 17, q = 23;
+    int n = p * q;
+    int phi = (p - 1) * (q - 1);
+    int e = 3; // public exponent
+    int d = modInverse(e, phi);
+
+    printf("Original Public Key: (e=%d, n=%d)\n", e, n);
+    printf("Original Private Key: (d=%d, n=%d)\n", d, n);
+
+    int message = 42;
+    long long cipher = modPow(message, e, n);
+    printf("Encrypted message: %lld\n", cipher);
+
+    long long decrypted = modPow(cipher, d, n);
+    printf("Decrypted message: %lld\n", decrypted);
+
+    // Now Bob leaks d, tries new e and d without changing n
+    int new_e = 5;
+    int new_d = modInverse(new_e, phi);
+    printf("New Public Key: (e=%d, n=%d)\n", new_e, n);
+    printf("New Private Key: (d=%d, n=%d)\n", new_d, n);
+
+    // Attacker can still break encryption because n is the same
+    printf("But attacker knows p=%d, q=%d, so n is compromised!\n", p, q);
+
+    return 0;
+}

@@ -1,0 +1,81 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+char matrix[5][5];
+int pos[26][2]; // stores position of each letter in the matrix
+
+void createMatrix(const char *key) {
+    int used[26] = {0};
+    int k = 0, i, j;
+    char ch;
+
+    // Prepare matrix with key
+    for (i = 0; key[i]; i++) {
+        ch = toupper(key[i]);
+        if (ch == 'J') ch = 'I';
+        if (!used[ch - 'A'] && ch >= 'A' && ch <= 'Z') {
+            matrix[k / 5][k % 5] = ch;
+            pos[ch - 'A'][0] = k / 5;
+            pos[ch - 'A'][1] = k % 5;
+            used[ch - 'A'] = 1;
+            k++;
+        }
+    }
+
+    // Fill remaining letters
+    for (ch = 'A'; ch <= 'Z'; ch++) {
+        if (ch == 'J') continue;
+        if (!used[ch - 'A']) {
+            matrix[k / 5][k % 5] = ch;
+            pos[ch - 'A'][0] = k / 5;
+            pos[ch - 'A'][1] = k % 5;
+            k++;
+        }
+    }
+}
+
+void decryptPair(char a, char b, char *res) {
+    if (a == 'J') a = 'I';
+    if (b == 'J') b = 'I';
+
+    int row1 = pos[a - 'A'][0], col1 = pos[a - 'A'][1];
+    int row2 = pos[b - 'A'][0], col2 = pos[b - 'A'][1];
+
+    if (row1 == row2) {
+        res[0] = matrix[row1][(col1 + 4) % 5];
+        res[1] = matrix[row2][(col2 + 4) % 5];
+    } else if (col1 == col2) {
+        res[0] = matrix[(row1 + 4) % 5][col1];
+        res[1] = matrix[(row2 + 4) % 5][col2];
+    } else {
+        res[0] = matrix[row1][col2];
+        res[1] = matrix[row2][col1];
+    }
+}
+
+void decryptMessage(const char *ciphertext) {
+    char res[3] = {0};
+    for (int i = 0; ciphertext[i] && ciphertext[i + 1]; i += 2) {
+        if (!isalpha(ciphertext[i])) {
+            i--;
+            continue;
+        }
+        decryptPair(toupper(ciphertext[i]), toupper(ciphertext[i + 1]), res);
+        printf("%c%c ", res[0], res[1]);
+    }
+}
+
+int main() {
+    const char *key = "MONARCHY";
+    const char *ciphertext =
+        "KXJEYUREBEZWEHEWRYTUHEYFSKREHEGOYFIWTTTUOLKSYCAJPO"
+        "BOTEIZONTXBYBNTGONEYCUZWRGDSONSXBOUYWRHEBAAHYUSEDQ";
+
+    createMatrix(key);
+    printf("Decrypted message:\n");
+    decryptMessage(ciphertext);
+    printf("\n");
+
+    return 0;
+}

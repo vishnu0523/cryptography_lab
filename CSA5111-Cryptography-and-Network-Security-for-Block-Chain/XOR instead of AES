@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+
+// Simulated block cipher (for demo only)
+uint64_t encrypt(uint64_t key, uint64_t block) {
+    return key ^ block; // simple XOR cipher (not secure)
+}
+
+// CBC-MAC for a message of given number of blocks
+uint64_t cbc_mac(uint64_t key, uint64_t *message, int blocks) {
+    uint64_t iv = 0;
+    for (int i = 0; i < blocks; i++) {
+        iv = encrypt(key, iv ^ message[i]);
+    }
+    return iv; // final block is the MAC
+}
+
+int main() {
+    uint64_t key = 0x0F0F0F0F0F0F0F0FULL;
+
+    // Original message X (1 block)
+    uint64_t X = 0x1234567890ABCDEFULL;
+
+    // MAC for message X
+    uint64_t T = cbc_mac(key, &X, 1);
+    printf("Original MAC T = %llx\n", T);
+
+    // Attacker constructs forged message: X || (X XOR T)
+    uint64_t forged[2];
+    forged[0] = X;
+    forged[1] = X ^ T;
+
+    // CBC-MAC of the forged message
+    uint64_t forged_mac = cbc_mac(key, forged, 2);
+    printf("Forged CBC-MAC of [X || (X XOR T)] = %llx\n", forged_mac);
+
+    // Compare
+    if (forged_mac == T)
+        printf("Forgery successful: forged MAC matches original T.\n");
+    else
+        printf("Forgery failed.\n");
+
+    return 0;
+}

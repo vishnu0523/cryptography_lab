@@ -1,0 +1,78 @@
+#include <stdio.h>
+#include <string.h>
+
+#define BLOCK_SIZE 8
+
+// Simple XOR as mock cipher
+void block_encrypt(char *input, char *key, char *output) {
+    for (int i = 0; i < BLOCK_SIZE; i++)
+        output[i] = input[i] ^ key[i];
+}
+
+// Add 1 and 0s padding
+void pad(char *data, int len, int padded_len) {
+    data[len] = 0x80;  // 10000000
+    for (int i = len + 1; i < padded_len; i++)
+        data[i] = 0x00;
+}
+
+void ecb_mode(char *plaintext, char *key, int len) {
+    char block[BLOCK_SIZE], out[BLOCK_SIZE];
+    printf("ECB Encrypted: ");
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        memcpy(block, &plaintext[i], BLOCK_SIZE);
+        block_encrypt(block, key, out);
+        for (int j = 0; j < BLOCK_SIZE; j++) printf("%02x", out[j]);
+    }
+    printf("\n");
+}
+
+void cbc_mode(char *plaintext, char *key, char *iv, int len) {
+    char block[BLOCK_SIZE], out[BLOCK_SIZE];
+    printf("CBC Encrypted: ");
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        for (int j = 0; j < BLOCK_SIZE; j++)
+            block[j] = plaintext[i + j] ^ iv[j];
+        block_encrypt(block, key, out);
+        memcpy(iv, out, BLOCK_SIZE);  // update IV
+        for (int j = 0; j < BLOCK_SIZE; j++) printf("%02x", out[j]);
+    }
+    printf("\n");
+}
+
+void cfb_mode(char *plaintext, char *key, char *iv, int len) {
+    char cipher[BLOCK_SIZE], out[BLOCK_SIZE];
+    printf("CFB Encrypted: ");
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        block_encrypt(iv, key, cipher);
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            out[j] = plaintext[i + j] ^ cipher[j];
+            iv[j] = out[j];  // feedback
+            printf("%02x", out[j]);
+        }
+    }
+    printf("\n");
+}
+
+int main() {
+    char plaintext[24] = "SECUREMSG";  // Short message
+    char key[BLOCK_SIZE] = "KEY12345";
+    char padded[32];
+    char iv[BLOCK_SIZE] = {0};
+
+    int len = strlen(plaintext);
+    int padded_len = ((len / BLOCK_SIZE) + 1) * BLOCK_SIZE;
+    memset(padded, 0, sizeof(padded));
+    memcpy(padded, plaintext, len);
+    pad(padded, len, padded_len);  // apply 1/0s padding
+
+    ecb_mode(padded, key, padded_len);
+
+    memcpy(iv, "INITVECT", BLOCK_SIZE);
+    cbc_mode(padded, key, iv, padded_len);
+
+    memcpy(iv, "INITVECT", BLOCK_SIZE);
+    cfb_mode(padded, key, iv, padded_len);
+
+    return 0;
+}

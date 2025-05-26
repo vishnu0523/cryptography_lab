@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <string.h>
+
+// Mock functions to simulate DES core structure
+void xor(char *a, char *b, char *result, int n) {
+    for (int i = 0; i < n; i++)
+        result[i] = a[i] == b[i] ? '0' : '1';
+}
+
+void simple_round(char *L, char *R, char *key) {
+    char temp[33];
+    xor(R, key, temp, 32);
+    char newR[33];
+    xor(L, temp, newR, 32);
+    strncpy(L, R, 32);
+    strncpy(R, newR, 32);
+}
+
+// Encrypt 64-bit block using simplified DES
+void des_encrypt(char *plaintext, char *key, char *ciphertext) {
+    char L[33], R[33];
+    strncpy(L, plaintext, 32); L[32] = '\0';
+    strncpy(R, plaintext + 32, 32); R[32] = '\0';
+
+    for (int i = 0; i < 16; i++) {
+        simple_round(L, R, key);  // 16 rounds with same key (for demo)
+    }
+
+    strncpy(ciphertext, R, 32);
+    strncpy(ciphertext + 32, L, 32);  // Combine R and L after last round
+    ciphertext[64] = '\0';
+}
+
+int main() {
+    // Example 64-bit binary plaintext and 56-bit key (padded to 64-bit here)
+    char plaintext[65] = "0000000100100011010001010110011110001001101010111100110111101111";  // 64 bits
+    char key[65]       = "0001001100110100010101110111100110011011101111001101111111110001";  // 64 bits for simplicity
+    char ciphertext[65];
+
+    printf("Plaintext : %s\n", plaintext);
+    des_encrypt(plaintext, key, ciphertext);
+    printf("Ciphertext: %s\n", ciphertext);
+
+    return 0;
+}

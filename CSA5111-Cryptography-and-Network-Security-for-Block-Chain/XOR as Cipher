@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+#define BLOCK_SIZE_64 8
+#define BLOCK_SIZE_128 16
+
+void left_shift(uint8_t *input, uint8_t *output, int size) {
+    uint8_t carry = 0;
+    for (int i = size - 1; i >= 0; i--) {
+        output[i] = (input[i] << 1) | carry;
+        carry = (input[i] & 0x80) ? 1 : 0;
+    }
+}
+
+// XOR buffer with constant
+void xor_with_rb(uint8_t *input, uint8_t rb, int size) {
+    input[size - 1] ^= rb;
+}
+
+void print_hex(uint8_t *data, int size) {
+    for (int i = 0; i < size; i++) printf("%02X", data[i]);
+    printf("\n");
+}
+
+// Dummy block cipher encryption: just flips bits (demo purpose only)
+void encrypt_block(uint8_t *key, uint8_t *input, uint8_t *output, int size) {
+    for (int i = 0; i < size; i++) {
+        output[i] = ~input[i]; // Not secure, just for simulation
+    }
+}
+
+void generate_cmac_subkeys(int block_size) {
+    uint8_t zero_block[16] = {0};
+    uint8_t L[16], K1[16], K2[16];
+    uint8_t key[16] = {0}; // Not used in dummy cipher
+
+    uint8_t Rb = (block_size == 16) ? 0x87 : 0x1B;
+
+    printf("Block size = %d bits\n", block_size * 8);
+    encrypt_block(key, zero_block, L, block_size);
+    printf("L  = "); print_hex(L, block_size);
+
+    left_shift(L, K1, block_size);
+    if (L[0] & 0x80) xor_with_rb(K1, Rb, block_size);
+    printf("K1 = "); print_hex(K1, block_size);
+
+    left_shift(K1, K2, block_size);
+    if (K1[0] & 0x80) xor_with_rb(K2, Rb, block_size);
+    printf("K2 = "); print_hex(K2, block_size);
+}
+
+int main() {
+    generate_cmac_subkeys(BLOCK_SIZE_64);   // 64-bit
+    printf("\n");
+    generate_cmac_subkeys(BLOCK_SIZE_128);  // 128-bit
+    return 0;
+}

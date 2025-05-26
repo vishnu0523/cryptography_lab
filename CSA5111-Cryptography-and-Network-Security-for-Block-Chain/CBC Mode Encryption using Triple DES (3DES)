@@ -1,0 +1,46 @@
+#include <stdio.h>
+#include <string.h>
+#include <openssl/des.h>
+
+void triple_des_cbc_encrypt(unsigned char *plaintext, unsigned char *ciphertext, int len,
+                            DES_key_schedule ks1, DES_key_schedule ks2, DES_key_schedule ks3,
+                            DES_cblock iv) {
+    DES_cblock input, output, prev_block;
+    memcpy(prev_block, iv, sizeof(DES_cblock));
+
+    for (int i = 0; i < len; i += 8) {
+        memcpy(input, plaintext + i, 8);
+        for (int j = 0; j < 8; j++) {
+            input[j] ^= prev_block[j];  // CBC XOR
+        }
+        DES_ecb3_encrypt(&input, &output, &ks1, &ks2, &ks3, DES_ENCRYPT);
+        memcpy(ciphertext + i, output, 8);
+        memcpy(prev_block, output, 8);
+    }
+}
+
+int main() {
+    // 64-bit keys for 3DES
+    DES_cblock key1 = {0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
+    DES_cblock key2 = {0xFE,0xDC,0xBA,0x98,0x76,0x54,0x32,0x10};
+    DES_cblock key3 = {0x89,0xAB,0xCD,0xEF,0x01,0x23,0x45,0x67};
+    DES_cblock iv =    {0x12,0x34,0x56,0x78,0x90,0xAB,0xCD,0xEF};
+
+    DES_key_schedule ks1, ks2, ks3;
+    DES_set_key_unchecked(&key1, &ks1);
+    DES_set_key_unchecked(&key2, &ks2);
+    DES_set_key_unchecked(&key3, &ks3);
+
+    unsigned char plaintext[16] = "HELLO123WORLD456";
+    unsigned char ciphertext[16];
+
+    triple_des_cbc_encrypt(plaintext, ciphertext, 16, ks1, ks2, ks3, iv);
+
+    printf("Ciphertext (Hex): ");
+    for (int i = 0; i < 16; i++) {
+        printf("%02X ", ciphertext[i]);
+    }
+    printf("\n");
+
+    return 0;
+}

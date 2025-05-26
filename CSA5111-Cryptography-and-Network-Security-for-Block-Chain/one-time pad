@@ -1,0 +1,62 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_TEXT_LENGTH 1000
+
+// Function to generate a random key stream between 0 and 26
+void generate_key_stream(int *key_stream, int length) {
+    for (int i = 0; i < length; i++) {
+        key_stream[i] = rand() % 27; // Random number between 0 and 26
+    }
+}
+
+// Function to encrypt the plaintext using the one-time pad Vigenère cipher
+void encrypt(char *plaintext, int *key_stream, char *ciphertext) {
+    int len = strlen(plaintext);
+    for (int i = 0; i < len; i++) {
+        // Only encrypt alphabetic characters
+        if (plaintext[i] >= 'A' && plaintext[i] <= 'Z') {
+            ciphertext[i] = (plaintext[i] - 'A' + key_stream[i]) % 26 + 'A';
+        } else if (plaintext[i] >= 'a' && plaintext[i] <= 'z') {
+            ciphertext[i] = (plaintext[i] - 'a' + key_stream[i]) % 26 + 'a';
+        } else {
+            ciphertext[i] = plaintext[i];  // Non-alphabetic characters remain unchanged
+        }
+    }
+    ciphertext[len] = '\0';  // Null-terminate the ciphertext
+}
+
+int main() {
+    char plaintext[MAX_TEXT_LENGTH];
+    char ciphertext[MAX_TEXT_LENGTH];
+    int key_stream[MAX_TEXT_LENGTH];
+
+    // Seed random number generator
+    srand(time(NULL));
+
+    // Input plaintext
+    printf("Enter the plaintext: ");
+    fgets(plaintext, MAX_TEXT_LENGTH, stdin);
+    // Remove the newline character at the end of the input
+    plaintext[strcspn(plaintext, "\n")] = 0;
+
+    // Generate a random key stream based on the length of the plaintext
+    generate_key_stream(key_stream, strlen(plaintext));
+
+    // Encrypt the plaintext
+    encrypt(plaintext, key_stream, ciphertext);
+
+    // Output the encrypted text
+    printf("Encrypted text: %s\n", ciphertext);
+
+    // Output the key stream (for debugging purposes)
+    printf("Key stream: ");
+    for (int i = 0; i < strlen(plaintext); i++) {
+        printf("%d ", key_stream[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
